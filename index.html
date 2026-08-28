@@ -807,14 +807,17 @@ p{
   line-height:1.4;
 }
 .hackWorkingDots::after{
-  content:"";
+  content:"...";
+  display:inline-block;
+  width:0;
+  overflow:hidden;
+  vertical-align:bottom;
+  white-space:nowrap;
   animation:workingDots 1.2s steps(4,end) infinite;
 }
 @keyframes workingDots{
-  0%{content:""}
-  25%{content:"."}
-  50%{content:".."}
-  75%,100%{content:"..."}
+  from{width:0}
+  to{width:1.6em}
 }
 
 
@@ -952,6 +955,17 @@ p{
   75%{transform:translateX(-4px)}
 }
 
+
+/* Ajustements Safari / iPhone */
+@supports (-webkit-touch-callout: none){
+  .codeInput{
+    font-size:22px; /* évite le zoom automatique des champs sur iPhone */
+  }
+  .heartBtn{
+    -webkit-user-select:none;
+  }
+}
+
 </style>
 </head>
 
@@ -996,6 +1010,23 @@ p{
         Ce message était prévu pour une seule ouverture.<br><br>
         Le protocole est maintenant verrouillé.
       </p>
+
+      <form id="ownerForm" style="margin-top:18px">
+        <input
+          class="codeInput"
+          id="ownerCodeInput"
+          type="password"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          maxlength="8"
+          autocomplete="off"
+          aria-label="Code système"
+          placeholder="••••••••"
+        >
+        <div class="codeError" id="ownerCodeError" aria-live="polite"></div>
+        <button class="btn secondary" type="submit">Accès système</button>
+      </form>
+
       <div class="accessNotice">STATUT : MESSAGE CONSOMMÉ ❤️</div>
     </div>
 
@@ -1237,10 +1268,13 @@ p{
 
 <script>
 
-/* Accès unique + code */
-const ACCESS_USED_KEY="surprise_lilo_used_v1";
-const ACCESS_SESSION_KEY="surprise_lilo_session_v1";
+/* Accès unique + code + accès propriétaire */
+const ACCESS_USED_KEY="surprise_lilo_used_v2";
+const ACCESS_SESSION_KEY="surprise_lilo_session_v2";
+
+// Les codes sont volontairement construits ici plutôt qu'affichés en clair dans l'interface.
 const ACCESS_CODE=String.fromCharCode(49,55,49,49); // 1711
+const OWNER_CODE=String.fromCharCode(48,56,48,57,50,48,48,51); // 08092003
 
 const accessGate=document.getElementById("accessGate");
 const accessCard=document.getElementById("accessCard");
@@ -1250,27 +1284,56 @@ const codeForm=document.getElementById("codeForm");
 const codeInput=document.getElementById("codeInput");
 const codeError=document.getElementById("codeError");
 
+const ownerForm=document.getElementById("ownerForm");
+const ownerCodeInput=document.getElementById("ownerCodeInput");
+const ownerCodeError=document.getElementById("ownerCodeError");
+
+/* Safari peut limiter Web Storage dans certains contextes privés.
+   Ces wrappers évitent qu'une erreur de stockage bloque toute la page. */
+function storageGet(storage,key){
+  try{
+    return storage.getItem(key);
+  }catch(err){
+    return null;
+  }
+}
+
+function storageSet(storage,key,value){
+  try{
+    storage.setItem(key,value);
+    return true;
+  }catch(err){
+    return false;
+  }
+}
+
 function showConsumed(){
   unlockView.style.display="none";
   consumedView.style.display="block";
   accessGate.classList.remove("hidden");
+  setTimeout(()=>{
+    if(ownerCodeInput) ownerCodeInput.focus();
+  },250);
 }
 
-function unlockTransmission(){
-  // Marque le message comme consommé sur ce navigateur/appareil.
-  localStorage.setItem(ACCESS_USED_KEY,"1");
+function openAsGuest(){
+  // 1711 = consommation normale de l'ouverture.
+  storageSet(localStorage,ACCESS_USED_KEY,"1");
+  storageSet(sessionStorage,ACCESS_SESSION_KEY,"guest");
+  accessGate.classList.add("hidden");
+}
 
-  // Cette session reste active : un simple rechargement ne bloque pas la page.
-  sessionStorage.setItem(ACCESS_SESSION_KEY,"1");
-
+function openAsOwner(){
+  // 08092003 = accès illimité : ne marque jamais le message comme consommé.
+  storageSet(sessionStorage,ACCESS_SESSION_KEY,"owner");
   accessGate.classList.add("hidden");
 }
 
 (function initSingleUseAccess(){
-  const activeSession=sessionStorage.getItem(ACCESS_SESSION_KEY)==="1";
-  const alreadyUsed=localStorage.getItem(ACCESS_USED_KEY)==="1";
+  const activeSession=storageGet(sessionStorage,ACCESS_SESSION_KEY);
+  const alreadyUsed=storageGet(localStorage,ACCESS_USED_KEY)==="1";
 
-  if(activeSession){
+  if(activeSession==="guest" || activeSession==="owner"){
     accessGate.classList.add("hidden");
     return;
   }
@@ -1281,7 +1344,7 @@ function unlockTransmission(){
   }
 
   accessGate.classList.remove("hidden");
-  setTimeout(()=>codeInput.focus(),250);
+  setTimeout(()=>codeInput && codeInput.focus(),250);
 })();
 
 codeForm.addEventListener("submit",(e)=>{
@@ -1289,9 +1352,15 @@ codeForm.addEventListener("submit",(e)=>{
 
   const entered=codeInput.value.trim();
 
+  if(entered===OWNER_CODE){
+    codeError.textContent="";
+    openAsOwner();
+    return;
+  }
+
   if(entered===ACCESS_CODE){
     codeError.textContent="";
-    unlockTransmission();
+    openAsGuest();
     return;
   }
 
@@ -1302,6 +1371,27 @@ codeForm.addEventListener("submit",(e)=>{
   accessCard.classList.add("shake");
   codeInput.focus();
 });
+
+if(ownerForm){
+  ownerForm.addEventListener("submit",(e)=>{
+    e.preventDefault();
+
+    const entered=ownerCodeInput.value.trim();
+
+    if(entered===OWNER_CODE){
+      ownerCodeError.textContent="";
+      openAsOwner();
+      return;
+    }
+
+    ownerCodeError.textContent="Code système incorrect.";
+    ownerCodeInput.value="";
+    accessCard.classList.remove("shake");
+    void accessCard.offsetWidth;
+    accessCard.classList.add("shake");
+    ownerCodeInput.focus();
+  });
+}
 
 
 let chosen = "Un bisou à distance 💋";
