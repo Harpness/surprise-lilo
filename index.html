@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#fff7fb" />
+  <title>Petite question ❤️</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #fff7fb 0%, #ffe8f1 50%, #fff4e6 100%);
+      overflow: hidden;
+      color: #2b2026;
+    }
+
+    .page {
+      position: relative;
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      position: relative;
+      width: min(92vw, 420px);
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: 28px;
+      box-shadow: 0 20px 60px rgba(122, 50, 86, .16);
+      padding: 34px 24px 28px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .emoji {
+      font-size: 54px;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    h1 {
+      margin: 12px 0 10px;
+      font-size: clamp(26px, 7vw, 34px);
+      line-height: 1.08;
+    }
+
+    p {
+      margin: 0 auto 24px;
+      max-width: 310px;
+      font-size: 16px;
+      line-height: 1.45;
+      color: #66515b;
+    }
+
+    .buttons {
+      position: relative;
+      min-height: 108px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 14px 24px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform .15s ease, box-shadow .15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #yesBtn {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      background: #ff4f8b;
+      color: white;
+      box-shadow: 0 10px 24px rgba(255, 79, 139, .32);
+    }
+
+    #yesBtn:active { transform: translateX(-50%) scale(.96); }
+
+    #noBtn {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 82px);
+      transform: translateX(-50%);
+      background: #f1edf0;
+      color: #5f5058;
+      z-index: 5;
+      box-shadow: 0 6px 18px rgba(50, 20, 35, .10);
+    }
+
+    .tiny {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #a38996;
+    }
+
+    .success {
+      display: none;
+    }
+
+    .success h1 {
+      font-size: clamp(28px, 8vw, 38px);
+    }
+
+    .heart {
+      position: fixed;
+      pointer-events: none;
+      z-index: 20;
+      animation: burst 1.8s ease-out forwards;
+      font-size: 22px;
+    }
+
+    .sparkle {
+      position: fixed;
+      pointer-events: none;
+      opacity: .55;
+      animation: drift linear infinite;
+      font-size: 18px;
+    }
+
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes burst {
+      0% { transform: translate(0,0) scale(.5) rotate(0); opacity: 0; }
+      15% { opacity: 1; }
+      100% { transform: translate(var(--x), var(--y)) scale(1.25) rotate(25deg); opacity: 0; }
+    }
+
+    @keyframes drift {
+      from { transform: translateY(110vh) rotate(0deg); }
+      to { transform: translateY(-20vh) rotate(360deg); }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <section class="card" id="questionCard">
+      <div class="emoji">☀️</div>
+      <h1>Bonjour toi ❤️</h1>
+      <p>
+        Petite question très importante pour bien commencer la journée…
+        <br><br>
+        Est-ce que tu acceptes officiellement de passer une belle journée
+        et de me garder un bisou pour plus tard ?
+      </p>
+
+      <div class="buttons">
+        <button id="yesBtn">Oui, évidemment ❤️</button>
+      </div>
+
+      <div class="tiny">Réfléchis bien… enfin, pas trop 😌</div>
+    </section>
+
+    <section class="card success" id="successCard">
+      <div class="emoji">🥰</div>
+      <h1>Bonne réponse.</h1>
+      <p>
+        Ta journée peut maintenant commencer officiellement.
+        <br><br>
+        Et le bisou est enregistré. Je n’oublie pas. ❤️
+      </p>
+    </section>
+
+    <button id="noBtn">Non 😶</button>
+  </main>
+
+  <script>
+    const noBtn = document.getElementById("noBtn");
+    const yesBtn = document.getElementById("yesBtn");
+    const questionCard = document.getElementById("questionCard");
+    const successCard = document.getElementById("successCard");
+
+    let escapes = 0;
+
+    function moveNoButton() {
+      escapes++;
+
+      const pad = 16;
+      const w = noBtn.offsetWidth;
+      const h = noBtn.offsetHeight;
+
+      const maxX = Math.max(pad, window.innerWidth - w - pad);
+      const maxY = Math.max(pad, window.innerHeight - h - pad);
+
+      const x = pad + Math.random() * (maxX - pad);
+      const y = pad + Math.random() * (maxY - pad);
+
+      noBtn.style.left = `${x}px`;
+      noBtn.style.top = `${y}px`;
+      noBtn.style.transform = "none";
+
+      if (escapes === 3) noBtn.textContent = "Tu insistes ? 😏";
+      if (escapes === 6) noBtn.textContent = "Toujours pas 😌";
+      if (escapes === 9) noBtn.textContent = "Essaie encore 😂";
+    }
+
+    // Ordinateur
+    noBtn.addEventListener("mouseenter", moveNoButton);
+
+    // Téléphone : le bouton s'échappe avant le clic
+    noBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      moveNoButton();
+    }, { passive: false });
+
+    noBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      moveNoButton();
+    });
+
+    yesBtn.addEventListener("click", () => {
+      questionCard.style.display = "none";
+      noBtn.style.display = "none";
+      successCard.style.display = "block";
+      launchHearts();
+    });
+
+    function launchHearts() {
+      const symbols = ["❤️", "💗", "💕", "✨", "🥰"];
+      for (let i = 0; i < 34; i++) {
+        const el = document.createElement("div");
+        el.className = "heart";
+        el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        el.style.left = "50vw";
+        el.style.top = "52vh";
+        el.style.setProperty("--x", `${(Math.random() - .5) * 700}px`);
+        el.style.setProperty("--y", `${(Math.random() - .5) * 900}px`);
+        el.style.animationDelay = `${Math.random() * .18}s`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2200);
+      }
+    }
+
+    // Petites décorations flottantes
+    for (let i = 0; i < 12; i++) {
+      const s = document.createElement("div");
+      s.className = "sparkle";
+      s.textContent = Math.random() > .5 ? "♡" : "✦";
+      s.style.left = `${Math.random() * 100}vw`;
+      s.style.animationDuration = `${7 + Math.random() * 8}s`;
+      s.style.animationDelay = `${-Math.random() * 10}s`;
+      document.body.appendChild(s);
+    }
+  </script>
+</body>
+</html>
