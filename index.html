@@ -862,6 +862,7 @@ p{
 }
 
 .accessCard{
+  position:relative;
   width:min(92vw,420px);
   padding:28px 24px;
   border-radius:28px;
@@ -966,6 +967,48 @@ p{
   }
 }
 
+
+.ownerTrigger{
+  position:absolute;
+  right:13px;
+  bottom:11px;
+  width:24px;
+  height:24px;
+  border:0;
+  background:transparent;
+  color:rgba(255,255,255,.14);
+  font-size:16px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+  border-radius:50%;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.ownerTrigger:focus{
+  outline:none;
+}
+
+.ownerUnlockPanel{
+  display:none;
+  margin-top:16px;
+  padding-top:15px;
+  border-top:1px dashed rgba(255,255,255,.08);
+}
+
+.ownerUnlockPanel.visible{
+  display:block;
+  animation:appear .25s ease;
+}
+
+.ownerUnlockLabel{
+  margin-bottom:10px;
+  color:#887f8c;
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
 </style>
 </head>
 
@@ -1000,6 +1043,33 @@ p{
 
       <div class="accessNotice">
         Une fois ouvert, ce message sera considéré comme consulté.
+      </div>
+
+      <button
+        class="ownerTrigger"
+        id="ownerTrigger"
+        type="button"
+        aria-label="Accès système"
+        title=""
+      >•</button>
+
+      <div class="ownerUnlockPanel" id="ownerUnlockPanel">
+        <div class="ownerUnlockLabel">Accès système</div>
+        <form id="ownerInitialForm">
+          <input
+            class="codeInput"
+            id="ownerInitialCodeInput"
+            type="password"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="8"
+            autocomplete="off"
+            aria-label="Code propriétaire"
+            placeholder="••••••••"
+          >
+          <div class="codeError" id="ownerInitialCodeError" aria-live="polite"></div>
+          <button class="btn secondary" type="submit">Ouvrir en mode système</button>
+        </form>
       </div>
     </div>
 
@@ -1288,6 +1358,12 @@ const ownerForm=document.getElementById("ownerForm");
 const ownerCodeInput=document.getElementById("ownerCodeInput");
 const ownerCodeError=document.getElementById("ownerCodeError");
 
+const ownerTrigger=document.getElementById("ownerTrigger");
+const ownerUnlockPanel=document.getElementById("ownerUnlockPanel");
+const ownerInitialForm=document.getElementById("ownerInitialForm");
+const ownerInitialCodeInput=document.getElementById("ownerInitialCodeInput");
+const ownerInitialCodeError=document.getElementById("ownerInitialCodeError");
+
 /* Safari peut limiter Web Storage dans certains contextes privés.
    Ces wrappers évitent qu'une erreur de stockage bloque toute la page. */
 function storageGet(storage,key){
@@ -1352,12 +1428,6 @@ codeForm.addEventListener("submit",(e)=>{
 
   const entered=codeInput.value.trim();
 
-  if(entered===OWNER_CODE){
-    codeError.textContent="";
-    openAsOwner();
-    return;
-  }
-
   if(entered===ACCESS_CODE){
     codeError.textContent="";
     openAsGuest();
@@ -1371,6 +1441,40 @@ codeForm.addEventListener("submit",(e)=>{
   accessCard.classList.add("shake");
   codeInput.focus();
 });
+
+
+if(ownerTrigger && ownerUnlockPanel){
+  ownerTrigger.addEventListener("click",()=>{
+    ownerUnlockPanel.classList.toggle("visible");
+
+    if(ownerUnlockPanel.classList.contains("visible")){
+      setTimeout(()=>{
+        if(ownerInitialCodeInput) ownerInitialCodeInput.focus();
+      },120);
+    }
+  });
+}
+
+if(ownerInitialForm){
+  ownerInitialForm.addEventListener("submit",(e)=>{
+    e.preventDefault();
+
+    const entered=ownerInitialCodeInput.value.trim();
+
+    if(entered===OWNER_CODE){
+      ownerInitialCodeError.textContent="";
+      openAsOwner();
+      return;
+    }
+
+    ownerInitialCodeError.textContent="Code système incorrect.";
+    ownerInitialCodeInput.value="";
+    accessCard.classList.remove("shake");
+    void accessCard.offsetWidth;
+    accessCard.classList.add("shake");
+    ownerInitialCodeInput.focus();
+  });
+}
 
 if(ownerForm){
   ownerForm.addEventListener("submit",(e)=>{
